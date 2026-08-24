@@ -1,0 +1,84 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f9;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+.busca-container {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.input-busca {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.lista-sugestoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.lista-sugestoes li {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.lista-sugestoes li:hover {
+  background-color: #f0f0f0;
+}
+
+.detalhes-cidade {
+  background-color: #e9ecef;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.detalhes-cidade h2 {
+  margin-top: 0;
+  color: #495057;
+}
+
+.detalhes-cidade p {
+  margin: 8px 0;
+  color: #333;
+}
