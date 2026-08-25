@@ -9,27 +9,46 @@ body {
   padding: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
 }
 
-.container {
+.layout-principal {
+  width: 100%;
+  max-width: 1000px;
+  padding: 2rem;
+}
+
+.titulo-app {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.cards-container {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap; /* Permite quebrar linha em telas pequenas */
+}
+
+.card {
   background: white;
   padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 500px;
+  flex: 1; /* Faz os cards dividirem o espaço igualmente */
+  min-width: 300px; /* Evita que o card fique fino demais em telas pequenas */
 }
 
-h1 {
+.card h2 {
   text-align: center;
-  color: #333;
+  margin-top: 0;
+  color: #495057;
 }
 
 .busca-container {
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .input-busca {
@@ -67,18 +86,50 @@ h1 {
   background-color: #f0f0f0;
 }
 
-.detalhes-cidade {
+.detalhes-selecao {
   background-color: #e9ecef;
   padding: 1rem;
   border-radius: 4px;
 }
 
-.detalhes-cidade h2 {
+.detalhes-selecao h3 {
   margin-top: 0;
-  color: #495057;
+  color: #333;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 8px;
 }
 
-.detalhes-cidade p {
+.detalhes-selecao p {
   margin: 8px 0;
   color: #333;
+}
+
+/* Estilos específicos para a lista de população */
+.lista-populacao {
+  margin: 0;
+  padding: 0;
+  list-style: none; /* Removemos as bolinhas/números para ficar igual ao card 1 */
+}
+
+.lista-populacao li {
+  margin: 8px 0; /* Mesmo espaçamento dos parágrafos do card 1 */
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.nome-cidade-pop {
+  white-space: nowrap; /* Não quebra linha */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Adiciona "..." se o nome for gigante */
+  flex-grow: 1; /* Ocupa o espaço restante */
+}
+
+.numero-populacao {
+  color: #333; /* Mesma cor do texto normal do card 1 */
+  white-space: nowrap; /* Não quebra linha */
+  text-align: right;
+  min-width: 110px; /* Cria uma coluna perfeitamente alinhada para os números */
 }

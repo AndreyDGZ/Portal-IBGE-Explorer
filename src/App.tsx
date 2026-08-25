@@ -1,104 +1,222 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { Municipio } from './types';
+import { Municipio, Estado, RespostaSidra, CidadePopulacao } from './types';
 
 function App() {
-  // Estado para armazenar o que o usuário digita na busca
-  const [busca, setBusca] = useState('');
-  
-  // Estado para armazenar todos os municípios retornados pela API
+  // --- ESTADOS DA FUNCIONALIDADE DE BUSCA DE CIDADES ---
+  const [buscaCidade, setBuscaCidade] = useState('');
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
-  
-  // Estado para armazenar as sugestões filtradas baseadas na busca
-  const [sugestoes, setSugestoes] = useState<Municipio[]>([]);
-  
-  // Estado para armazenar a cidade que o usuário selecionou clicando
+  const [sugestoesCidade, setSugestoesCidade] = useState<Municipio[]>([]);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<Municipio | null>(null);
 
-  // useEffect roda quando o componente é montado na tela
+  // --- ESTADOS DA NOVA FUNCIONALIDADE DE BUSCA DE ESTADOS ---
+  const [buscaEstado, setBuscaEstado] = useState('');
+  const [estadosBrasil, setEstadosBrasil] = useState<Estado[]>([]);
+  const [sugestoesEstado, setSugestoesEstado] = useState<Estado[]>([]);
+  const [estadoSelecionado, setEstadoSelecionado] = useState<Estado | null>(null);
+  
+  const [cidadesPopulosas, setCidadesPopulosas] = useState<CidadePopulacao[]>([]);
+  const [carregandoPopulosas, setCarregandoPopulosas] = useState(false);
+
+  // Carregamento inicial (Cidades e Estados)
   useEffect(() => {
-    // Acessamos a variável de ambiente que guarda a URL da API
-    // No Vite, variáveis de ambiente que começam com VITE_ são expostas no import.meta.env
-    const urlApi = import.meta.env.VITE_IBGE_API_URL;
+    // Pegando as variáveis de ambiente do Vite
+    const urlApiCidades = import.meta.env.VITE_IBGE_API_URL;
+    const urlApiEstados = import.meta.env.VITE_IBGE_API_ESTADOS_URL;
 
-    // Fazemos a requisição para a API
-    fetch(urlApi)
+    // Busca de Cidades
+    fetch(urlApiCidades)
       .then((resposta) => resposta.json())
-      .then((dados) => {
-        // Guardamos os dados no estado
-        setMunicipios(dados);
-      })
+      .then((dados) => setMunicipios(dados))
       .catch((erro) => console.error("Erro ao buscar cidades:", erro));
-  }, []); // Array de dependências vazio significa que roda apenas uma vez no carregamento
 
-  // Função que lida com a digitação no campo de busca
-  const handleBuscaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Busca de Estados
+    fetch(urlApiEstados)
+      .then((resposta) => resposta.json())
+      .then((dados) => setEstadosBrasil(dados))
+      .catch((erro) => console.error("Erro ao buscar estados:", erro));
+  }, []);
+
+  // --- LÓGICA DA BUSCA DE CIDADES ---
+  const handleBuscaCidadeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
-    setBusca(valor);
+    setBuscaCidade(valor);
 
-    // Se o usuário digitou algo, filtramos as cidades
     if (valor.trim().length > 0) {
-      // Convertendo para minúsculo para a busca não ser sensível a maiúsculas/minúsculas
       const termoBusca = valor.toLowerCase();
       const cidadesFiltradas = municipios.filter((cidade) =>
         cidade.nome.toLowerCase().includes(termoBusca)
       );
-      
-      // Limitamos a 10 sugestões para não poluir a tela
-      setSugestoes(cidadesFiltradas.slice(0, 10));
+      setSugestoesCidade(cidadesFiltradas.slice(0, 10));
     } else {
-      // Se apagar tudo, limpamos as sugestões e a cidade selecionada
-      setSugestoes([]);
+      setSugestoesCidade([]);
       setCidadeSelecionada(null);
     }
   };
 
-  // Função chamada ao clicar em uma sugestão
   const selecionarCidade = (cidade: Municipio) => {
-    setCidadeSelecionada(cidade); // Define a cidade escolhida para mostrar os detalhes
-    setBusca(cidade.nome);        // Preenche o input com o nome da cidade
-    setSugestoes([]);             // Limpa a lista de sugestões
+    setCidadeSelecionada(cidade);
+    setBuscaCidade(cidade.nome);
+    setSugestoesCidade([]);
+  };
+
+  // --- LÓGICA DA BUSCA DE ESTADOS ---
+  const handleBuscaEstadoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    setBuscaEstado(valor);
+
+    if (valor.trim().length > 0) {
+      const termoBusca = valor.toLowerCase();
+      // Filtra estados pelo nome ou pela sigla (ex: SP ou São Paulo)
+      const estadosFiltrados = estadosBrasil.filter((est) =>
+        est.nome.toLowerCase().includes(termoBusca) || est.sigla.toLowerCase().includes(termoBusca)
+      );
+      setSugestoesEstado(estadosFiltrados);
+    } else {
+      setSugestoesEstado([]);
+      setEstadoSelecionado(null);
+      setCidadesPopulosas([]);
+    }
+  };
+
+  const selecionarEstado = async (estado: Estado) => {
+    setEstadoSelecionado(estado);
+    setBuscaEstado(`${estado.nome} - ${estado.sigla}`);
+    setSugestoesEstado([]);
+    
+    // Inicia a busca das 10 cidades mais populosas
+    buscarCidadesPopulosas(estado.id);
+  };
+
+  const buscarCidadesPopulosas = async (idEstado: number) => {
+    setCarregandoPopulosas(true);
+    
+    // Pega a URL base da variável de ambiente
+    const urlApiPopulacaoBase = import.meta.env.VITE_IBGE_API_POPULACAO_URL;
+    
+    // Monta a URL completa adicionando o parâmetro de localidades para o estado escolhido
+    // N6[N3[{ID_ESTADO}]] significa: Traz todos os N6 (Municípios) que pertencem ao N3 (Estado) informado
+    const urlCompleta = `${urlApiPopulacaoBase}?localidades=N6[N3[${idEstado}]]`;
+
+    try {
+      const resposta = await fetch(urlCompleta);
+      const dados: RespostaSidra[] = await resposta.json();
+      
+      // Valida se a API retornou o formato esperado
+      if (dados && dados.length > 0 && dados[0].resultados && dados[0].resultados.length > 0) {
+        const series = dados[0].resultados[0].series;
+        
+        // Mapeamos os dados brutos da API para o nosso formato mais simples
+        const cidadesExtraidas: CidadePopulacao[] = series.map(item => ({
+          id: item.localidade.id,
+          // A API retorna o nome no formato "Nome da Cidade - UF", usamos split para limpar
+          nome: item.localidade.nome.split(' - ')[0],
+          populacao: parseInt(item.serie["2022"]) || 0
+        }));
+
+        // Ordenamos do maior para o menor (decrescente) usando a população
+        const cidadesOrdenadas = cidadesExtraidas.sort((a, b) => b.populacao - a.populacao);
+        
+        // Pegamos apenas as 10 primeiras
+        setCidadesPopulosas(cidadesOrdenadas.slice(0, 10));
+      } else {
+        setCidadesPopulosas([]);
+      }
+    } catch (erro) {
+      console.error("Erro ao buscar população:", erro);
+    } finally {
+      setCarregandoPopulosas(false);
+    }
   };
 
   return (
-    <div className="container">
-      <h1>Buscar Cidade Brasileira</h1>
+    <div className="layout-principal">
+      <h1 className="titulo-app">Portal IBGE Explorer</h1>
       
-      <div className="busca-container">
-        <input
-          type="text"
-          placeholder="Digite o nome da cidade..."
-          value={busca}
-          onChange={handleBuscaChange}
-          className="input-busca"
-        />
-        
-        {/* Mostra a lista de sugestões apenas se houver alguma */}
-        {sugestoes.length > 0 && (
-          <ul className="lista-sugestoes">
-            {sugestoes.map((cidade) => (
-              <li 
-                key={cidade.id} 
-                onClick={() => selecionarCidade(cidade)}
-              >
-                {cidade.nome} - {cidade.microrregiao.mesorregiao.UF.sigla}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <div className="cards-container">
+        {/* CARD 1: BUSCA DE CIDADES */}
+        <div className="card">
+          <h2>Buscar Cidade</h2>
+          
+          <div className="busca-container">
+            <input
+              type="text"
+              placeholder="Digite o nome da cidade..."
+              value={buscaCidade}
+              onChange={handleBuscaCidadeChange}
+              className="input-busca"
+            />
+            
+            {sugestoesCidade.length > 0 && (
+              <ul className="lista-sugestoes">
+                {sugestoesCidade.map((cidade) => (
+                  <li key={cidade.id} onClick={() => selecionarCidade(cidade)}>
+                    {cidade.nome} - {cidade.microrregiao.mesorregiao.UF.sigla}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      {/* Se uma cidade foi selecionada, exibe os detalhes dela */}
-      {cidadeSelecionada && (
-        <div className="detalhes-cidade">
-          <h2>Detalhes da Cidade</h2>
-          <p><strong>Nome:</strong> {cidadeSelecionada.nome}</p>
-          <p><strong>Estado:</strong> {cidadeSelecionada.microrregiao.mesorregiao.UF.nome} ({cidadeSelecionada.microrregiao.mesorregiao.UF.sigla})</p>
-          <p><strong>Região do País:</strong> {cidadeSelecionada.microrregiao.mesorregiao.UF.regiao.nome}</p>
-          <p><strong>Mesorregião:</strong> {cidadeSelecionada.microrregiao.mesorregiao.nome}</p>
-          <p><strong>Microrregião:</strong> {cidadeSelecionada.microrregiao.nome}</p>
+          {cidadeSelecionada && (
+            <div className="detalhes-selecao">
+              <h3>Detalhes</h3>
+              <p><strong>Nome:</strong> {cidadeSelecionada.nome}</p>
+              <p><strong>Estado:</strong> {cidadeSelecionada.microrregiao.mesorregiao.UF.nome} ({cidadeSelecionada.microrregiao.mesorregiao.UF.sigla})</p>
+              <p><strong>Região:</strong> {cidadeSelecionada.microrregiao.mesorregiao.UF.regiao.nome}</p>
+              <p><strong>Microrregião:</strong> {cidadeSelecionada.microrregiao.nome}</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* CARD 2: BUSCA DE ESTADOS E POPULAÇÃO */}
+        <div className="card">
+          <h2>Estados e População</h2>
+          
+          <div className="busca-container">
+            <input
+              type="text"
+              placeholder="Digite o estado (ex: São Paulo)..."
+              value={buscaEstado}
+              onChange={handleBuscaEstadoChange}
+              className="input-busca"
+            />
+            
+            {sugestoesEstado.length > 0 && (
+              <ul className="lista-sugestoes">
+                {sugestoesEstado.map((estado) => (
+                  <li key={estado.id} onClick={() => selecionarEstado(estado)}>
+                    {estado.nome} - {estado.sigla}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {estadoSelecionado && (
+            <div className="detalhes-selecao">
+              <h3>10 Maiores Cidades ({estadoSelecionado.sigla})</h3>
+              
+              {carregandoPopulosas ? (
+                <p>Carregando Censo 2022...</p>
+              ) : cidadesPopulosas.length > 0 ? (
+                <ul className="lista-populacao">
+                  {cidadesPopulosas.map((cidade) => (
+                    <li key={cidade.id}>
+                      <span className="nome-cidade-pop"><strong>{cidade.nome}:</strong></span>
+                      <span className="numero-populacao">
+                        {cidade.populacao.toLocaleString('pt-BR')} hab.
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Não foi possível carregar as cidades.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

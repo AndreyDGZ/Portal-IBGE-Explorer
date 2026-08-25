@@ -29,3 +29,41 @@ export interface Municipio {
   nome: string;
   microrregiao: Microrregiao;
 }
+
+// Novos tipos para a busca de estados
+export interface Estado {
+  id: number;
+  sigla: string;
+  nome: string;
+  regiao: Regiao;
+}
+
+// Tipos para a resposta da API do SIDRA (População)
+export interface LocalidadeSidra {
+  id: string;
+  nome: string;
+}
+
+export interface SerieSidra {
+  "2022": string; // A chave do ano vem como string
+}
+
+export interface ResultadoSidra {
+  localidade: LocalidadeSidra;
+  serie: SerieSidra;
+}
+
+export interface RespostaSidra {
+  id: string;
+  variavel: string;
+  unidade: string;
+  resultados: [{
+    series: ResultadoSidra[];
+  }];
+}
+
+export interface CidadePopulacao {
+  id: string;
+  nome: string;
+  populacao: number;
+}
